@@ -13,10 +13,16 @@ spec:
     spec:
       containers:
         - name: web
-          image: nginx:1.14          # FAILLE 1 : CVE connues
+          image: nginx:1.25.4
           securityContext:
-            privileged: true          # FAILLE 2
-            runAsUser: 0              # FAILLE 3
+            runAsNonRoot: true
+            runAsUser: 101
           ports:
             - containerPort: 80
-          # FAILLE 4 : pas de resources.limits
+          resources:
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+            requests:
+              cpu: "250m"
+              memory: "256Mi"
