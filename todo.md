@@ -68,14 +68,14 @@ Collez-le à la racine du repo (`TODO.md`), ouvrez-le dans Cursor, et demandez-l
 
 **Objectif :** Argo CD tourne et surveille le repo. Jalon cible : aujourd'hui (lundi) midi.
 
-- [ ] `kubectl create namespace argocd`
-- [ ] `kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argocd/stable/manifests/install.yaml`
-- [ ] Attendre que tous les pods soient `Running` : `kubectl get pods -n argocd -w`
-- [ ] Récupérer le mot de passe admin initial :
+- [x] `kubectl create namespace argocd`
+- [x] `kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argocd/stable/manifests/install.yaml`
+- [x] Attendre que tous les pods soient `Running` : `kubectl get pods -n argocd -w`
+- [x] Récupérer le mot de passe admin initial :
   ```
   kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
   ```
-- [ ] Créer `infra/argocd-apps/root-app.yaml` (app-of-apps racine) :
+- [x] Créer `infra/argocd-apps/root-app.yaml` (app-of-apps racine) :
   ```yaml
   apiVersion: argoproj.io/v1alpha1
   kind: Application
@@ -94,8 +94,8 @@ Collez-le à la racine du repo (`TODO.md`), ouvrez-le dans Cursor, et demandez-l
     syncPolicy:
       automated: { prune: true, selfHeal: true }
   ```
-- [ ] `kubectl apply -f infra/argocd-apps/root-app.yaml` — **dernier `kubectl apply` manuel du projet, hors debug**
-- [ ] Commit + push `infra/argocd-apps/root-app.yaml`
+- [x] `kubectl apply -f infra/argocd-apps/root-app.yaml` — **dernier `kubectl apply` manuel du projet, hors debug**
+- [x] Commit + push `infra/argocd-apps/root-app.yaml`
 
 **DoD :** `kubectl get applications -n argocd` liste `root` en `Synced`/`Healthy`.
 
