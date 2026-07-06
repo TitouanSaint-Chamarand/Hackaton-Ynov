@@ -15,6 +15,8 @@ from github import Github
 from kubernetes import client, config
 from openai import OpenAI
 
+from env_loader import load_repo_env
+
 GITHUB_REPO = os.getenv("GITHUB_REPO", "TitouanSaint-Chamarand/Hackaton-Ynov")
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 OVH_AI_TOKEN = os.getenv("OVH_AI_TOKEN")
@@ -228,6 +230,7 @@ def _select_report(reports: list[dict[str, Any]]) -> dict[str, Any] | None:
 
 
 def main() -> int:
+    load_repo_env()
     reports = get_vulnerability_reports(TARGET_NAMESPACE)
     report = _select_report(reports)
     if not report:

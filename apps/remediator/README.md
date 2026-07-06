@@ -35,14 +35,14 @@ pip install -r requirements.txt
 ```bash
 export KUBECONFIG=~/Downloads/kubeconfig.yaml
 set -a && source ../../.env && set +a
-python remediator.py
+python3 remediator.py
 ```
 
 ## Test AI Endpoints (Phase 8)
 
 ```bash
 set -a && source ../../.env && set +a
-python test_ai.py
+python3 test_ai.py
 ```
 
 ## Déploiement cluster (CronJob)
