@@ -105,7 +105,7 @@ Collez-le à la racine du repo (`TODO.md`), ouvrez-le dans Cursor, et demandez-l
 
 **Objectif :** une cible avec 4 familles de failles pour alimenter scanners + démo.
 
-- [ ] Créer `apps/vulnerable-app/deployment.yaml` :
+- [x] Créer `apps/vulnerable-app/deployment.yaml` :
   ```yaml
   apiVersion: apps/v1
   kind: Deployment
@@ -130,7 +130,7 @@ Collez-le à la racine du repo (`TODO.md`), ouvrez-le dans Cursor, et demandez-l
               - containerPort: 80
             # FAILLE 4 : pas de resources.limits
   ```
-- [ ] Créer `infra/argocd-apps/vulnerable-app.yaml` :
+- [x] Créer `infra/argocd-apps/vulnerable-app.yaml` :
   ```yaml
   apiVersion: argoproj.io/v1alpha1
   kind: Application
@@ -150,7 +150,7 @@ Collez-le à la racine du repo (`TODO.md`), ouvrez-le dans Cursor, et demandez-l
       automated: { prune: true, selfHeal: true }
       syncOptions: [CreateNamespace=true]
   ```
-- [ ] Commit + push
+- [x] Commit + push
 
 **DoD :** `kubectl get pods -n demo` montre `vulnerable-web` en `Running`. Garder ce commit identifiable — il servira à "rejouer" la faille en démo (`git revert` du futur correctif).
 
