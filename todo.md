@@ -158,7 +158,7 @@ Collez-le à la racine du repo (`TODO.md`), ouvrez-le dans Cursor, et demandez-l
 
 ## Phase 4 — Trivy-operator (détection de vulnérabilités)
 
-- [ ] Créer `infra/argocd-apps/trivy-operator.yaml` :
+- [x] Créer `infra/argocd-apps/trivy-operator.yaml` :
   ```yaml
   apiVersion: argoproj.io/v1alpha1
   kind: Application
@@ -182,7 +182,7 @@ Collez-le à la racine du repo (`TODO.md`), ouvrez-le dans Cursor, et demandez-l
       automated: { prune: true, selfHeal: true }
       syncOptions: [CreateNamespace=true]
   ```
-- [ ] Commit + push
+- [x] Commit + push
 
 **DoD :** après quelques minutes, `kubectl get vulnerabilityreports -A` montre un rapport pour `vulnerable-web` avec des CVE `CRITICAL`/`HIGH`.
 
