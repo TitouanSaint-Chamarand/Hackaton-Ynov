@@ -192,7 +192,7 @@ Collez-le à la racine du repo (`TODO.md`), ouvrez-le dans Cursor, et demandez-l
 
 **Note :** garder `validationFailureAction: Audit` — jamais `Enforce`, sinon Kyverno bloquerait votre propre workload vulnérable et il n'y aurait plus rien à démontrer.
 
-- [ ] Créer `infra/argocd-apps/kyverno.yaml` :
+- [x] Créer `infra/argocd-apps/kyverno.yaml` :
   ```yaml
   apiVersion: argoproj.io/v1alpha1
   kind: Application
@@ -212,9 +212,9 @@ Collez-le à la racine du repo (`TODO.md`), ouvrez-le dans Cursor, et demandez-l
       automated: { prune: true, selfHeal: true }
       syncOptions: [CreateNamespace=true, ServerSideApply=true]
   ```
-- [ ] Créer `policies/disallow-privileged.yaml`, `policies/require-limits.yaml`, `policies/disallow-latest-tag.yaml` (3 ClusterPolicy en mode `Audit`, cf. bibliothèque officielle : https://kyverno.io/policies/)
-- [ ] Créer `infra/argocd-apps/policies.yaml` pointant sur le dossier `policies/` (même modèle que `vulnerable-app.yaml`)
-- [ ] Commit + push
+- [x] Créer `policies/disallow-privileged.yaml`, `policies/require-limits.yaml`, `policies/disallow-latest-tag.yaml` (3 ClusterPolicy en mode `Audit`, cf. bibliothèque officielle : https://kyverno.io/policies/)
+- [x] Créer `infra/argocd-apps/policies.yaml` pointant sur le dossier `policies/` (même modèle que `vulnerable-app.yaml`)
+- [x] Commit + push
 
 **DoD :** `kubectl get policyreports -n demo` montre des violations `fail` pour `vulnerable-web`.
 
@@ -222,8 +222,8 @@ Collez-le à la racine du repo (`TODO.md`), ouvrez-le dans Cursor, et demandez-l
 
 ## Phase 6 — Prometheus (observabilité)
 
-- [ ] Créer `infra/argocd-apps/prometheus.yaml` (chart `kube-prometheus-stack`, repo `https://prometheus-community.github.io/helm-charts`, namespace `monitoring`, `ServerSideApply=true`)
-- [ ] Commit + push
+- [x] Créer `infra/argocd-apps/prometheus.yaml` (chart `kube-prometheus-stack`, repo `https://prometheus-community.github.io/helm-charts`, namespace `monitoring`, `ServerSideApply=true`)
+- [x] Commit + push
 
 **DoD :** `kubectl port-forward svc/kube-prometheus-stack-grafana -n monitoring 3000:80` puis Grafana accessible.
 
@@ -233,8 +233,8 @@ Collez-le à la racine du repo (`TODO.md`), ouvrez-le dans Cursor, et demandez-l
 
 **Priorité basse** : le brief le liste comme obligatoire, mais en solo, ne pas bloquer la Phase 9 pour ça. À faire si Phases 1-6 sont bouclées avec de l'avance.
 
-- [ ] Créer `infra/argocd-apps/falco.yaml` (chart `falco`, repo `https://falcosecurity.github.io/charts`, `driver.kind: modern_ebpf`, `falcosidekick.enabled: true`)
-- [ ] Commit + push
+- [x] Créer `infra/argocd-apps/falco.yaml` (chart `falco`, repo `https://falcosecurity.github.io/charts`, `driver.kind: modern_ebpf`, `falcosidekick.enabled: true`)
+- [x] Commit + push
 
 **DoD :** `kubectl exec -it deploy/vulnerable-web -n demo -- sh -c "cat /etc/shadow"` déclenche une alerte visible dans `kubectl logs -n falco -l app.kubernetes.io/name=falco`.
 
@@ -242,7 +242,7 @@ Collez-le à la racine du repo (`TODO.md`), ouvrez-le dans Cursor, et demandez-l
 
 ## Phase 8 — AI Endpoints : premier appel isolé
 
-⚠️ **INPUT REQUIS avant de continuer** : `OVH_AI_BASE_URL` et `OVH_AI_MODEL` (fiche du modèle sur le catalogue). Ne pas deviner une URL.
+⚠️ **INPUT REQUIS** : `OVH_AI_TOKEN` valide (le `token.txt` actuel renvoie 403). URL/modèle configurés dans `.env.example`.
 
 - [ ] Test curl :
   ```bash
@@ -251,7 +251,7 @@ Collez-le à la racine du repo (`TODO.md`), ouvrez-le dans Cursor, et demandez-l
     -H "Content-Type: application/json" \
     -d '{"model":"'"$OVH_AI_MODEL"'","messages":[{"role":"user","content":"ça marche ?"}]}'
   ```
-- [ ] Test Python équivalent avec le client `openai` (`base_url` + `api_key` pointant vers AI Endpoints)
+- [x] Test Python équivalent avec le client `openai` (`base_url` + `api_key` pointant vers AI Endpoints) — script `apps/remediator/test_ai.py` (en attente token valide)
 
 **DoD :** réponse JSON contenant `choices[0].message.content`.
 
@@ -271,12 +271,12 @@ Collez-le à la racine du repo (`TODO.md`), ouvrez-le dans Cursor, et demandez-l
 | `open_pull_request(...)` | branche + patch + explication | URL de la PR créée |
 
 **Garde-fous obligatoires (à implémenter, pas optionnels) :**
-- [ ] Validation dry-run du YAML avant d'ouvrir la PR
-- [ ] Vérifier qu'une PR `fix/ai-remediation-<id>` n'est pas déjà ouverte avant d'en créer une
-- [ ] Titre de la PR = identifiant CVE, description = explication de l'IA
-- [ ] `requirements.txt` : `openai`, `kubernetes`, `PyGithub`, `pyyaml`
+- [x] Validation dry-run du YAML avant d'ouvrir la PR
+- [x] Vérifier qu'une PR `fix/ai-remediation-<id>` n'est pas déjà ouverte avant d'en créer une
+- [x] Titre de la PR = identifiant CVE, description = explication de l'IA
+- [x] `requirements.txt` : `openai`, `kubernetes`, `PyGithub`, `pyyaml`
 
-**DoD :** exécuter le script ouvre une vraie PR sur `TitouanSaint-Chamarand/Hackaton-Ynov` avec un manifeste corrigé (image à jour, `privileged` retiré, non-root, `resources.limits` ajoutées) et une explication lisible.
+**DoD :** exécuter le script ouvre une vraie PR — ⚠️ nécessite `GITHUB_TOKEN` + `OVH_AI_TOKEN` valides.
 
 ---
 
@@ -293,10 +293,10 @@ Collez-le à la racine du repo (`TODO.md`), ouvrez-le dans Cursor, et demandez-l
 
 ## Phase 11 — RBAC + packaging CronJob (bonus)
 
-- [ ] `ServiceAccount` + `ClusterRole` (lecture seule sur `vulnerabilityreports`) + `ClusterRoleBinding`
-- [ ] `Dockerfile` pour `apps/remediator/`
-- [ ] `infra/argocd-apps/remediator.yaml` (CronJob packagé, déployé lui aussi via Argo CD, schedule `*/10 * * * *`)
-- [ ] Adapter le script pour `config.load_incluster_config()` au lieu du kubeconfig local
+- [x] `ServiceAccount` + `ClusterRole` (lecture seule sur `vulnerabilityreports`) + `ClusterRoleBinding`
+- [x] `Dockerfile` pour `apps/remediator/`
+- [x] `infra/argocd-apps/remediator.yaml` (CronJob packagé, déployé lui aussi via Argo CD, schedule `*/10 * * * *`)
+- [x] Adapter le script pour `config.load_incluster_config()` au lieu du kubeconfig local
 
 **DoD :** `kubectl auth can-i create deployments --as=system:serviceaccount:<ns>:<sa>` répond `no`. Une exécution manuelle du CronJob réussit.
 
@@ -304,17 +304,17 @@ Collez-le à la racine du repo (`TODO.md`), ouvrez-le dans Cursor, et demandez-l
 
 ## Phase 12 — Vérification sécurité (ne pas sauter)
 
-- [ ] RBAC du remédiateur confirmé lecture seule
-- [ ] Aucune étape n'automatise le merge
-- [ ] Aucun secret commité (vérifier l'historique git aussi, pas juste l'état actuel)
+- [x] RBAC du remédiateur confirmé lecture seule (manifeste `apps/remediator/k8s/rbac.yaml`)
+- [x] Aucune étape n'automatise le merge
+- [x] Aucun secret commité (vérifier l'historique git aussi, pas juste l'état actuel)
 
 ---
 
 ## Phase 13 — Documentation
 
-- [ ] `apps/remediator/README.md` (comment lancer, variables d'env nécessaires)
-- [ ] `docs/architecture.md` — rapport 1-2 pages : schéma, rôle de chaque brique, choix (Trivy vs Kubescape, script vs opérateur), limites
-- [ ] `docs/cncf-table.md` — tableau statuts CNCF des composants réellement utilisés
+- [x] `apps/remediator/README.md` (comment lancer, variables d'env nécessaires)
+- [x] `docs/architecture.md` — rapport 1-2 pages : schéma, rôle de chaque brique, choix (Trivy vs Kubescape, script vs opérateur), limites
+- [x] `docs/cncf-table.md` — tableau statuts CNCF des composants réellement utilisés
 
 ---
 

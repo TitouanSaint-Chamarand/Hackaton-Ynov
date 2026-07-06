@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: remediator
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: remediator
+  namespace: remediator
+spec:
+  schedule: "*/10 * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: remediator
+          restartPolicy: OnFailure
+          containers:
+            - name: remediator
+              image: ghcr.io/titouansaint-chamarand/hackaton-remediator:latest
+              imagePullPolicy: IfNotPresent
+              envFrom:
+                - secretRef:
+                    name: remediator-secrets
+              env:
+                - name: TARGET_NAMESPACE
+                  value: demo
+                - name: MANIFEST_PATH
+                  value: apps/vulnerable-app/deployment.yaml
+                - name: GITHUB_REPO
+                  value: TitouanSaint-Chamarand/Hackaton-Ynov
