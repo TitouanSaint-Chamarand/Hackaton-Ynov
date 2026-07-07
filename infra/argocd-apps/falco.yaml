@@ -16,9 +16,15 @@ spec:
         falco:
           webserver:
             enabled: true
+            prometheus_metrics_enabled: true
+            threadiness: 8
           metrics:
             enabled: true
+            interval: 1s
         resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
           limits:
             cpu: 500m
             memory: 512Mi
