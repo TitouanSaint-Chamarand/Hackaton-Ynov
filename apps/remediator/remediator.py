@@ -35,6 +35,7 @@ On te fournit un résumé de vulnérabilités Trivy et le manifeste Deployment a
 
 Corrige le manifeste en respectant ces règles :
 - Mettre à jour l'image nginx vers une version récente sans CVE critiques connues
+- Toujours utiliser un tag d'image explicite et figé (jamais :latest)
 - Retirer privileged: true et runAsUser: 0 ; utiliser runAsNonRoot: true et runAsUser: 101
 - Ajouter resources.limits (cpu et memory) sur chaque conteneur
 - Conserver apiVersion, kind, name, namespace et labels

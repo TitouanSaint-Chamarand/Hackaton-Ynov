@@ -8,11 +8,26 @@ spec:
   source:
     repoURL: https://prometheus-community.github.io/helm-charts
     chart: kube-prometheus-stack
-    targetRevision: "*"
+    targetRevision: "87.10.1"
     helm:
       values: |
+        alertmanager:
+          alertmanagerSpec:
+            resources:
+              limits:
+                cpu: 500m
+                memory: 512Mi
+        prometheusOperator:
+          resources:
+            limits:
+              cpu: 500m
+              memory: 512Mi
         prometheus:
           prometheusSpec:
+            resources:
+              limits:
+                cpu: 500m
+                memory: 512Mi
             serviceMonitorSelectorNilUsesHelmValues: false
   destination:
     server: https://kubernetes.default.svc

@@ -1,3 +1,4 @@
+
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -8,7 +9,30 @@ spec:
   source:
     repoURL: https://kyverno.github.io/kyverno/
     chart: kyverno
-    targetRevision: "*"
+    targetRevision: "3.8.1"
+    helm:
+      values: |
+        admissionController:
+          container:
+            resources:
+              limits:
+                cpu: 500m
+                memory: 512Mi
+        backgroundController:
+          resources:
+            limits:
+              cpu: 500m
+              memory: 512Mi
+        cleanupController:
+          resources:
+            limits:
+              cpu: 500m
+              memory: 512Mi
+        reportsController:
+          resources:
+            limits:
+              cpu: 500m
+              memory: 512Mi
   destination:
     server: https://kubernetes.default.svc
     namespace: kyverno

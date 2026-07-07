@@ -8,11 +8,15 @@ spec:
   source:
     repoURL: https://falcosecurity.github.io/charts
     chart: falco
-    targetRevision: "*"
+    targetRevision: "9.1.0"
     helm:
       values: |
         driver:
           kind: modern_ebpf
+        resources:
+          limits:
+            cpu: 500m
+            memory: 512Mi
         falcosidekick:
           enabled: true
   destination:

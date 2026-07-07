@@ -8,11 +8,15 @@ spec:
   source:
     repoURL: https://aquasecurity.github.io/helm-charts/
     chart: trivy-operator
-    targetRevision: "*"
+    targetRevision: "0.33.2"
     helm:
       values: |
         trivy:
           ignoreUnfixed: true
+        resources:
+          limits:
+            cpu: 500m
+            memory: 512Mi
   destination:
     server: https://kubernetes.default.svc
     namespace: trivy-system
