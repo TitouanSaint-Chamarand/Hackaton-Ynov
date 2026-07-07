@@ -14,15 +14,28 @@ spec:
       values: |
         admissionController:
           container:
+            image:
+              registry: ghcr.io
             resources:
+              requests:
+                cpu: 100m
+                memory: 128Mi
               limits:
                 cpu: 500m
                 memory: 512Mi
+          initContainer:
+            image:
+              registry: ghcr.io
           serviceMonitor:
             enabled: true
             interval: 30s
         backgroundController:
+          image:
+            registry: ghcr.io
           resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
             limits:
               cpu: 500m
               memory: 512Mi
@@ -30,7 +43,12 @@ spec:
             enabled: true
             interval: 30s
         cleanupController:
+          image:
+            registry: ghcr.io
           resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
             limits:
               cpu: 500m
               memory: 512Mi
@@ -38,13 +56,22 @@ spec:
             enabled: true
             interval: 30s
         reportsController:
+          image:
+            registry: ghcr.io
           resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
             limits:
               cpu: 500m
               memory: 512Mi
           serviceMonitor:
             enabled: true
             interval: 30s
+        crds:
+          migration:
+            image:
+              registry: ghcr.io
   destination:
     server: https://kubernetes.default.svc
     namespace: kyverno
