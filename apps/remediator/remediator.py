@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import os
 import re
-import subprocess
+import subprocess  # nosec B404 - required to run kubectl validation command
 import sys
 import tempfile
 from typing import Any
@@ -152,7 +152,12 @@ def validate_yaml(yaml_content: str) -> bool:
 
     try:
         cmd = ["kubectl", "apply", "--dry-run=server", "-f", path]
-        result = subprocess.run(cmd, capture_output=True, text=True, check=False)
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            check=False,
+        )  # nosec B603 - fixed kubectl command list, shell disabled
         if result.returncode != 0 and "connection refused" not in result.stderr.lower():
             print(result.stderr, file=sys.stderr)
         return result.returncode == 0

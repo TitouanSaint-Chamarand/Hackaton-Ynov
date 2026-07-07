@@ -9,7 +9,7 @@ from openai import OpenAI, PermissionDeniedError
 
 from env_loader import load_repo_env
 
-OVH_TOKEN_HELP = """
+OVH_TOKEN_HELP = """  # nosec B105 - help text example, not a real credential
 Erreur 403 : le token OVH AI Endpoints est invalide ou expiré.
 
 Ce n'est PAS le token GitHub ni le fichier token.txt du hackathon.
