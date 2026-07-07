@@ -12,7 +12,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY remediator.py .
+COPY remediator.py env_loader.py .
 
 USER 1000
 ENTRYPOINT ["python", "remediator.py"]
