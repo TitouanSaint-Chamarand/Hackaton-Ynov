@@ -9,7 +9,7 @@ from openai import OpenAI, PermissionDeniedError
 
 from env_loader import load_repo_env
 
-OVH_TOKEN_HELP = """  # nosec B105 - help text example, not a real credential
+OVH_TOKEN_HELP = """
 Erreur 403 : le token OVH AI Endpoints est invalide ou expiré.
 
 Ce n'est PAS le token GitHub ni le fichier token.txt du hackathon.
@@ -18,8 +18,8 @@ Il faut une « API access key » créée dans le manager OVH :
   Public Cloud → AI & Machine Learning → AI Endpoints → API keys
   → « Create a new API key »
 
-Copie la clé dans .env :
-  OVH_AI_TOKEN=ta_cle_ici
+Copie la clé dans .env (format attendu) :
+  OVH_AI_TOKEN: <api_key>
 
 Puis relance : .venv/bin/python test_ai.py
 """
