@@ -171,16 +171,17 @@ def _primary_cve(report: dict[str, Any]) -> str:
     return vulns[0].get("vulnerabilityID", "remediation") if vulns else "remediation"
 
 
-def _pr_already_open(gh_repo: Any, remediation_id: str) -> bool:
+def _find_open_pr(gh_repo: Any, remediation_id: str) -> Any | None:
     branch = f"{PR_BRANCH_PREFIX}{remediation_id}"
-    owner = gh_repo.owner.login
     for pr in gh_repo.get_pulls(state="open"):
-        if pr.head.ref == branch or pr.head.ref.startswith(PR_BRANCH_PREFIX):
-            print(f"PR déjà ouverte: {pr.html_url}")
-            return True
+        if pr.head.ref == branch:
+            return pr
+    return None
+
+
+def _branch_exists(gh_repo: Any, branch: str) -> bool:
     try:
         gh_repo.get_git_ref(f"heads/{branch}")
-        print(f"Branche existante: {branch}")
         return True
     except Exception:
         return False
@@ -199,26 +200,30 @@ def open_pull_request(
 
     remediation_id = cve_id.replace("/", "-")
     gh_repo = Github(GITHUB_TOKEN).get_repo(repo)
-
-    if _pr_already_open(gh_repo, remediation_id):
-        raise RuntimeError(f"Une PR {PR_BRANCH_PREFIX}{remediation_id} existe déjà")
-
     branch_name = f"{PR_BRANCH_PREFIX}{remediation_id}"
-    main_sha = gh_repo.get_git_ref("heads/main").object.sha
-    gh_repo.create_git_ref(ref=f"refs/heads/{branch_name}", sha=main_sha)
+    existing_pr = _find_open_pr(gh_repo, remediation_id)
+    branch_exists = _branch_exists(gh_repo, branch_name)
+
+    if not branch_exists:
+        main_sha = gh_repo.get_git_ref("heads/main").object.sha
+        gh_repo.create_git_ref(ref=f"refs/heads/{branch_name}", sha=main_sha)
+
+    content_on_branch = gh_repo.get_contents(path, ref=branch_name)
+    branch_sha = content_on_branch.sha
+
     gh_repo.update_file(
         path=path,
         message=f"fix: remediate {cve_id}",
         content=fixed_yaml,
-        sha=sha,
+        sha=branch_sha,
         branch=branch_name,
     )
-    pr = gh_repo.create_pull(
-        title=cve_id,
-        body=explanation,
-        head=branch_name,
-        base="main",
-    )
+
+    if existing_pr:
+        print(f"PR déjà ouverte, mise à jour: {existing_pr.html_url}")
+        return existing_pr.html_url
+
+    pr = gh_repo.create_pull(title=cve_id, body=explanation, head=branch_name, base="main")
     return pr.html_url
 
 
