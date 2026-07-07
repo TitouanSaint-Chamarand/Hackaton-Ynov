@@ -6,16 +6,38 @@ spec:
   validationFailureAction: Audit
   background: true
   rules:
-    - name: no-privileged-containers
+    - name: harden-container-security-context
       match:
         any:
           - resources:
               kinds:
                 - Pod
+      exclude:
+        any:
+          - resources:
+              namespaces:
+                - kube-system
+                - argocd
+                - kyverno
+                - monitoring
+                - falco
+                - trivy-system
+                - remediator
       validate:
-        message: Les conteneurs privilegies sont interdits.
-        pattern:
-          spec:
-            containers:
-              - =(securityContext):
-                  =(privileged): "false"
+        message: privileged, allowPrivilegeEscalation et capabilities admin sont interdits.
+        foreach:
+          - list: "request.object.spec.containers"
+            deny:
+              conditions:
+                any:
+                  - key: "{{ element.securityContext.privileged || false }}"
+                    operator: Equals
+                    value: true
+                  - key: "{{ element.securityContext.allowPrivilegeEscalation || false }}"
+                    operator: Equals
+                    value: true
+                  - key: "{{ element.securityContext.capabilities.add[] || `[]` }}"
+                    operator: AnyIn
+                    value:
+                      - SYS_ADMIN
+                      - NET_ADMIN

@@ -78,7 +78,7 @@ data:
           "datasource": "Prometheus",
           "targets": [
             {
-              "expr": "sum(trivy_image_vulnerabilities{severity=~\"$severity\"})",
+              "expr": "sum(trivy_image_vulnerabilities{severity=~\"$severity\", namespace=~\"$namespace\"})",
               "refId": "A"
             }
           ],
@@ -95,7 +95,7 @@ data:
           "datasource": "Prometheus",
           "targets": [
             {
-              "expr": "sum by (severity) (trivy_image_vulnerabilities)",
+              "expr": "sum by (severity) (trivy_image_vulnerabilities{namespace=~\"$namespace\"})",
               "refId": "A"
             }
           ],

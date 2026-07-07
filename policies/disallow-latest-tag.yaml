@@ -6,15 +6,33 @@ spec:
   validationFailureAction: Audit
   background: true
   rules:
-    - name: require-image-tag
+    - name: require-immutable-image-reference
       match:
         any:
           - resources:
               kinds:
                 - Pod
+      exclude:
+        any:
+          - resources:
+              namespaces:
+                - kube-system
+                - argocd
+                - kyverno
+                - monitoring
+                - falco
+                - trivy-system
+                - remediator
       validate:
-        message: Le tag :latest est interdit — figez une version.
-        pattern:
-          spec:
-            containers:
-              - image: "!*:latest"
+        message: Les images doivent utiliser un tag explicite ou un digest, jamais :latest.
+        foreach:
+          - list: "request.object.spec.containers"
+            deny:
+              conditions:
+                any:
+                  - key: "{{ regex_match('.*:latest$', element.image) }}"
+                    operator: Equals
+                    value: true
+                  - key: "{{ regex_match('^.+(:[^/]+|@sha256:[a-f0-9]{64})$', element.image) }}"
+                    operator: Equals
+                    value: false

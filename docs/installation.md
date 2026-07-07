@@ -166,13 +166,14 @@ cp .env.example .env
 | Variable | Description |
 |---|---|
 | `KUBECONFIG` | Chemin vers le kubeconfig |
-| `GITHUB_TOKEN` | PAT fine-grained GitHub (Contents + Pull requests Read/Write) |
+| `GITHUB_TOKEN_REPO` | PAT fine-grained GitHub (Contents + Pull requests Read/Write) |
+| `GHCR_PULL_TOKEN` | Token dedie registre GHCR (scope minimal `read:packages`) |
 | `GITHUB_REPO` | `TitouanSaint-Chamarand/Hackaton-Ynov` |
 | `OVH_AI_TOKEN` | Clé API OVH AI Endpoints |
 | `OVH_AI_BASE_URL` | `https://oai.endpoints.kepler.ai.cloud.ovh.net/v1` |
 | `OVH_AI_MODEL` | ex. `Qwen3-Coder-30B-A3B-Instruct` |
 
-> Ne jamais committer `.env`, `kubeconfig.yaml` ou `token.txt`.
+> Ne jamais committer `.env`, `token.txt`, `kubeconfig.yaml`, `kubeconfig.yml` ni `*kubeconfig*.yaml`.
 
 ---
 
@@ -204,10 +205,14 @@ Créer le secret Kubernetes (jamais committer) :
 ```bash
 kubectl create namespace remediator --dry-run=client -o yaml | kubectl apply -f -
 kubectl create secret generic remediator-secrets -n remediator \
-  --from-literal=GITHUB_TOKEN=<token> \
+  --from-literal=GITHUB_TOKEN=<token_repo_rw> \
   --from-literal=OVH_AI_TOKEN=<token> \
   --from-literal=OVH_AI_BASE_URL=https://oai.endpoints.kepler.ai.cloud.ovh.net/v1 \
   --from-literal=OVH_AI_MODEL=Qwen3-Coder-30B-A3B-Instruct
+kubectl create secret docker-registry ghcr-pull-secret -n remediator \
+  --docker-server=ghcr.io \
+  --docker-username=<github_user> \
+  --docker-password=<token_ghcr_read_packages>
 ```
 
 Le CronJob est déployé automatiquement par Argo CD (`infra/argocd-apps/remediator.yaml`), schedule `*/10 * * * *`.
@@ -269,6 +274,8 @@ chmod +x apps/team-access/generate-sa-kubeconfig.sh
 KUBECONFIG=./user-dev1-demo-kubeconfig.yaml kubectl get pods -n demo
 ```
 
+Les kubeconfigs individuels (`*kubeconfig*.yaml`) sont generes localement et ne doivent jamais etre pushes.
+
 Controle des droits (exemple):
 
 ```bash
@@ -285,6 +292,8 @@ Attendu: un profil en `view` peut lire mais pas creer de deployments.
 ```
 kubeconfig.yaml
 kubeconfig.yml
+*kubeconfig*.yaml
+*kubeconfig*.yml
 token.txt
 .env
 *.pem

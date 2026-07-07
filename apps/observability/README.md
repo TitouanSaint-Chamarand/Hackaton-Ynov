@@ -13,6 +13,15 @@ Ce dossier contient les objets Kubernetes utilises pour la vue astreinte securit
 ```bash
 kubectl get prometheusrule -n monitoring cve-critical-alert
 kubectl get configmap -n monitoring grafana-dashboard-security-incident
+kubectl get configmap -n monitoring grafana-datasource-loki
+```
+
+Verification metrique Trivy:
+
+```bash
+POD_NAME="$(kubectl -n trivy-system get pod -l app.kubernetes.io/name=trivy-operator -o jsonpath='{.items[0].metadata.name}')"
+kubectl -n trivy-system port-forward "pod/${POD_NAME}" 8081:8080
+curl -s http://127.0.0.1:8081/metrics | rg "^trivy_image_vulnerabilities"
 ```
 
 ## Utilisation en astreinte

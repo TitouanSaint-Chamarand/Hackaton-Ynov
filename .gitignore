@@ -1,5 +1,7 @@
 kubeconfig.yaml
 kubeconfig.yml
+*kubeconfig*.yaml
+*kubeconfig*.yml
 token.txt
 .env
 *.pem

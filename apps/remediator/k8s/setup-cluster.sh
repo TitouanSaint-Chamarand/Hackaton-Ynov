@@ -14,7 +14,8 @@ set -a
 source "$ENV_FILE"
 set +a
 
-: "${GITHUB_TOKEN:?GITHUB_TOKEN manquant dans .env}"
+: "${GITHUB_TOKEN_REPO:?GITHUB_TOKEN_REPO manquant dans .env}"
+: "${GHCR_PULL_TOKEN:?GHCR_PULL_TOKEN manquant dans .env}"
 : "${OVH_AI_TOKEN:?OVH_AI_TOKEN manquant dans .env}"
 : "${KUBECONFIG:?KUBECONFIG manquant dans .env}"
 
@@ -23,7 +24,7 @@ OVH_AI_MODEL="${OVH_AI_MODEL:-Qwen3-Coder-30B-A3B-Instruct}"
 
 kubectl create secret generic remediator-secrets \
   -n remediator \
-  --from-literal=GITHUB_TOKEN="$GITHUB_TOKEN" \
+  --from-literal=GITHUB_TOKEN="$GITHUB_TOKEN_REPO" \
   --from-literal=OVH_AI_TOKEN="$OVH_AI_TOKEN" \
   --from-literal=OVH_AI_BASE_URL="$OVH_AI_BASE_URL" \
   --from-literal=OVH_AI_MODEL="$OVH_AI_MODEL" \
@@ -33,7 +34,7 @@ kubectl create secret docker-registry ghcr-pull-secret \
   -n remediator \
   --docker-server=ghcr.io \
   --docker-username=TitouanSaint-Chamarand \
-  --docker-password="$GITHUB_TOKEN" \
+  --docker-password="$GHCR_PULL_TOKEN" \
   --dry-run=client -o yaml | kubectl apply -f -
 
 kubectl apply -f "$(dirname "$0")/rbac.yaml" -f "$(dirname "$0")/cronjob.yaml"

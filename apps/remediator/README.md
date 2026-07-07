@@ -22,7 +22,8 @@ pip install -r requirements.txt
 | Variable | Description |
 |---|---|
 | `KUBECONFIG` | Chemin vers le kubeconfig (hors repo) |
-| `GITHUB_TOKEN` | PAT fine-grained : Contents + Pull requests (Read/Write) |
+| `GITHUB_TOKEN_REPO` | PAT fine-grained : Contents + Pull requests (Read/Write) |
+| `GHCR_PULL_TOKEN` | Token dedie GHCR avec scope minimal `read:packages` |
 | `GITHUB_REPO` | `TitouanSaint-Chamarand/Hackaton-Ynov` |
 | `OVH_AI_TOKEN` | Clé API OVH AI Endpoints |
 | `OVH_AI_BASE_URL` | `https://oai.endpoints.kepler.ai.cloud.ovh.net/v1` |
@@ -56,6 +57,10 @@ kubectl create secret generic remediator-secrets -n remediator \
   --from-literal=OVH_AI_TOKEN=... \
   --from-literal=OVH_AI_BASE_URL=https://oai.endpoints.kepler.ai.cloud.ovh.net/v1 \
   --from-literal=OVH_AI_MODEL=Qwen3-Coder-30B-A3B-Instruct
+kubectl create secret docker-registry ghcr-pull-secret -n remediator \
+  --docker-server=ghcr.io \
+  --docker-username=<github_user> \
+  --docker-password=<GHCR_PULL_TOKEN>
 ```
 
 2. Builder et pousser l'image Docker, puis laisser Argo CD synchroniser `infra/argocd-apps/remediator.yaml`.

@@ -18,7 +18,7 @@ from openai import OpenAI
 from env_loader import load_repo_env
 
 GITHUB_REPO = os.getenv("GITHUB_REPO", "TitouanSaint-Chamarand/Hackaton-Ynov")
-GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
+GITHUB_TOKEN = os.getenv("GITHUB_TOKEN") or os.getenv("GITHUB_TOKEN_REPO")
 OVH_AI_TOKEN = os.getenv("OVH_AI_TOKEN")
 OVH_AI_BASE_URL = os.getenv(
     "OVH_AI_BASE_URL", "https://oai.endpoints.kepler.ai.cloud.ovh.net/v1"
