@@ -221,7 +221,7 @@ data:
           },
           "options": {
             "mode": "markdown",
-            "content": "### Contexte incident\\n- Service: `$service`\\n- Namespace: `$namespace`\\n- Severite suivie: `$severity`\\n- Equipe proprietaire: `security`\\n- Criticite: `high`\\n- Runbook: [Investigation CVE critique](https://runbooks.example.internal/security/cve-critical)\\n- Dashboard UID: `security-incident-demo`\\n- Query logs recommandee: `{namespace=\\\"$namespace\\\"} |= \\\"error\\\"`\\n\\n**Checklist rapide**\\n1. Verifier l'evolution CVE\\n2. Croiser avec redemarrages/CPU\\n3. Ouvrir les logs correles\\n4. Escalader si impact client confirme"
+            "content": "### Contexte incident\n- Service: `$service`\n- Namespace: `$namespace`\n- Severite suivie: `$severity`\n- Equipe proprietaire: `security`\n- Criticite: `high`\n- Runbook: [Investigation CVE critique](https://runbooks.example.internal/security/cve-critical)\n- Dashboard UID: `security-incident-demo`\n- Query logs recommandee: `{namespace=\"$namespace\"} |= \"error\"`\n\n**Checklist rapide**\n1. Verifier l'evolution CVE\n2. Croiser avec redemarrages/CPU\n3. Ouvrir les logs correles\n4. Escalader si impact client confirme"
           }
         }
       ]
