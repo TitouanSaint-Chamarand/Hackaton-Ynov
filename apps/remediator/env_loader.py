@@ -7,7 +7,11 @@ from pathlib import Path
 
 
 def load_repo_env() -> None:
-    env_path = Path(__file__).resolve().parents[2] / ".env"
+    path = Path(__file__).resolve()
+    if len(path.parents) <= 2:
+        return
+
+    env_path = path.parents[2] / ".env"
     if not env_path.is_file():
         return
 
