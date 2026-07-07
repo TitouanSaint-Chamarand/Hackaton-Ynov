@@ -1,0 +1,214 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-loki-quickstart
+  namespace: monitoring
+  labels:
+    grafana_dashboard: "1"
+data:
+  loki-quickstart.json: |
+    {
+      "uid": "loki-quickstart",
+      "title": "Loki - Logs Quickstart",
+      "tags": ["loki", "logs", "quickstart"],
+      "schemaVersion": 39,
+      "version": 2,
+      "timezone": "browser",
+      "refresh": "10s",
+      "time": {
+        "from": "now-1h",
+        "to": "now"
+      },
+      "templating": {
+        "list": [
+          {
+            "name": "namespace",
+            "type": "query",
+            "label": "Namespace",
+            "datasource": "Loki",
+            "query": "label_values({job=~\".+\"}, namespace)",
+            "refresh": 1,
+            "includeAll": true,
+            "allValue": ".+",
+            "multi": false,
+            "current": {
+              "selected": true,
+              "text": "All",
+              "value": "$__all"
+            }
+          },
+          {
+            "name": "pod",
+            "type": "query",
+            "label": "Pod",
+            "datasource": "Loki",
+            "query": "label_values({namespace=~\"$namespace\"}, pod)",
+            "refresh": 1,
+            "includeAll": true,
+            "allValue": ".+",
+            "multi": false,
+            "current": {
+              "selected": true,
+              "text": "All",
+              "value": "$__all"
+            }
+          },
+          {
+            "name": "search",
+            "type": "textbox",
+            "label": "Contient (texte)",
+            "query": "error",
+            "current": {
+              "selected": false,
+              "text": "error",
+              "value": "error"
+            }
+          },
+          {
+            "name": "priority",
+            "type": "query",
+            "label": "Priorite Falco",
+            "datasource": "Loki",
+            "query": "label_values({namespace=\"falco\"}, priority)",
+            "refresh": 1,
+            "includeAll": true,
+            "allValue": ".+",
+            "multi": false,
+            "current": {
+              "selected": true,
+              "text": "All",
+              "value": "$__all"
+            }
+          }
+        ]
+      },
+      "panels": [
+        {
+          "id": 1,
+          "type": "stat",
+          "title": "Logs sur 5m",
+          "datasource": "Loki",
+          "targets": [
+            {
+              "expr": "sum(count_over_time({namespace=~\"$namespace\", pod=~\"$pod\"} |= \"$search\" [5m]))",
+              "refId": "A",
+              "queryType": "instant"
+            }
+          ],
+          "gridPos": {
+            "h": 5,
+            "w": 6,
+            "x": 0,
+            "y": 0
+          }
+        },
+        {
+          "id": 2,
+          "type": "timeseries",
+          "title": "Volume de logs (1m)",
+          "datasource": "Loki",
+          "targets": [
+            {
+              "expr": "sum(count_over_time({namespace=~\"$namespace\", pod=~\"$pod\"} [1m]))",
+              "refId": "A"
+            }
+          ],
+          "gridPos": {
+            "h": 5,
+            "w": 18,
+            "x": 6,
+            "y": 0
+          }
+        },
+        {
+          "id": 3,
+          "type": "timeseries",
+          "title": "Falco - volume d evenements (1m)",
+          "datasource": "Loki",
+          "targets": [
+            {
+              "expr": "sum by (priority) (count_over_time({namespace=\"falco\", priority=~\"$priority\"} [1m]))",
+              "refId": "A"
+            }
+          ],
+          "gridPos": {
+            "h": 6,
+            "w": 12,
+            "x": 0,
+            "y": 5
+          }
+        },
+        {
+          "id": 4,
+          "type": "timeseries",
+          "title": "Falco - top regles",
+          "datasource": "Loki",
+          "targets": [
+            {
+              "expr": "topk(5, sum by (rule) (count_over_time({namespace=\"falco\", priority=~\"$priority\"} [5m])))",
+              "refId": "A"
+            }
+          ],
+          "gridPos": {
+            "h": 6,
+            "w": 12,
+            "x": 12,
+            "y": 5
+          }
+        },
+        {
+          "id": 5,
+          "type": "logs",
+          "title": "Logs filtres",
+          "datasource": "Loki",
+          "targets": [
+            {
+              "expr": "{namespace=~\"$namespace\", pod=~\"$pod\"} |= \"$search\"",
+              "refId": "A"
+            }
+          ],
+          "options": {
+            "dedupStrategy": "none",
+            "enableLogDetails": true,
+            "prettifyLogMessage": false,
+            "showCommonLabels": false,
+            "showLabels": true,
+            "sortOrder": "Descending",
+            "wrapLogMessage": true
+          },
+          "gridPos": {
+            "h": 10,
+            "w": 24,
+            "x": 0,
+            "y": 11
+          }
+        },
+        {
+          "id": 6,
+          "type": "logs",
+          "title": "Falco - flux brut",
+          "datasource": "Loki",
+          "targets": [
+            {
+              "expr": "{namespace=\"falco\", priority=~\"$priority\"}",
+              "refId": "A"
+            }
+          ],
+          "options": {
+            "dedupStrategy": "none",
+            "enableLogDetails": true,
+            "prettifyLogMessage": false,
+            "showCommonLabels": false,
+            "showLabels": true,
+            "sortOrder": "Descending",
+            "wrapLogMessage": true
+          },
+          "gridPos": {
+            "h": 10,
+            "w": 24,
+            "x": 0,
+            "y": 21
+          }
+        }
+      ]
+    }

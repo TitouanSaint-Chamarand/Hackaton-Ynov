@@ -8,22 +8,6 @@ metadata:
 data:
   security-incident.json: |
     {
-      "__inputs": [
-        {
-          "name": "DS_PROMETHEUS",
-          "label": "Prometheus",
-          "type": "datasource",
-          "pluginId": "prometheus",
-          "pluginName": "Prometheus"
-        },
-        {
-          "name": "DS_LOKI",
-          "label": "Loki",
-          "type": "datasource",
-          "pluginId": "loki",
-          "pluginName": "Loki"
-        }
-      ],
       "title": "Astreinte - Incident securite",
       "uid": "security-incident-demo",
       "schemaVersion": 39,
@@ -38,10 +22,7 @@ data:
           {
             "name": "namespace",
             "type": "query",
-            "datasource": {
-              "type": "prometheus",
-              "uid": "${DS_PROMETHEUS}"
-            },
+            "datasource": "Prometheus",
             "query": "label_values(kube_pod_info, namespace)",
             "refresh": 1,
             "includeAll": true,
@@ -56,10 +37,7 @@ data:
           {
             "name": "service",
             "type": "query",
-            "datasource": {
-              "type": "prometheus",
-              "uid": "${DS_PROMETHEUS}"
-            },
+            "datasource": "Prometheus",
             "query": "label_values(kube_pod_info{namespace=~\"$namespace\"}, pod)",
             "refresh": 1,
             "includeAll": true,
@@ -74,7 +52,7 @@ data:
           {
             "name": "severity",
             "type": "custom",
-            "query": "Critical,High,Medium,Low",
+            "query": "Critical,High,Medium,Low,Unknown",
             "current": {
               "selected": true,
               "text": "Critical",
@@ -99,7 +77,7 @@ data:
           "title": "CVE actives (selon severite)",
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "prometheus"
           },
           "targets": [
             {
@@ -119,7 +97,7 @@ data:
           "title": "Evolution CVE par severite",
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "prometheus"
           },
           "targets": [
             {
@@ -139,7 +117,7 @@ data:
           "title": "Redemarrages containers (${time_window})",
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "prometheus"
           },
           "targets": [
             {
@@ -159,7 +137,7 @@ data:
           "title": "CPU pods (${time_window})",
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "prometheus"
           },
           "targets": [
             {
@@ -179,7 +157,7 @@ data:
           "title": "Changements recents (deployments)",
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "prometheus"
           },
           "targets": [
             {
@@ -201,7 +179,7 @@ data:
           "title": "Kyverno - resultats de policies (${time_window})",
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "prometheus"
           },
           "targets": [
             {
@@ -221,7 +199,7 @@ data:
           "title": "Falco - cibles scrapees UP",
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "prometheus"
           },
           "targets": [
             {
@@ -241,7 +219,7 @@ data:
           "title": "Logs correles",
           "datasource": {
             "type": "loki",
-            "uid": "${DS_LOKI}"
+            "uid": "loki"
           },
           "targets": [
             {
