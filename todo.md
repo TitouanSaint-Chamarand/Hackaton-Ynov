@@ -101,7 +101,7 @@ Pas de CSR/certificats signés (trop long) — on passe par des ServiceAccounts 
 
 ### C1. Loki (logs applicatifs)
 
-- [ ] Créer `infra/argocd-apps/loki.yaml` :
+- [x] Créer `infra/argocd-apps/loki.yaml` :
   ```yaml
   apiVersion: argoproj.io/v1alpha1
   kind: Application
@@ -134,7 +134,7 @@ Pas de CSR/certificats signés (trop long) — on passe par des ServiceAccounts 
 
 ### C2. Alertmanager — alerte sur CVE critique
 
-- [ ] Créer une `PrometheusRule` (Alertmanager est déjà bundlé dans `kube-prometheus-stack`, rien à réinstaller) :
+- [x] Créer une `PrometheusRule` (Alertmanager est déjà bundlé dans `kube-prometheus-stack`, rien à réinstaller) :
   ```yaml
   apiVersion: monitoring.coreos.com/v1
   kind: PrometheusRule
@@ -155,13 +155,13 @@ Pas de CSR/certificats signés (trop long) — on passe par des ServiceAccounts 
             annotations:
               summary: "Au moins une CVE critique détectée dans le cluster"
   ```
-- [ ] Commit dans `infra/argocd-apps/` (ou via une Application dédiée pointant sur ce fichier)
+- [x] Commit dans `infra/argocd-apps/` (ou via une Application dédiée pointant sur ce fichier)
 
 **DoD :** l'alerte apparaît dans l'UI Alertmanager (`kubectl port-forward svc/kube-prometheus-stack-alertmanager -n monitoring 9093:9093`) quand une CVE critique est présente.
 
 ### C3. Dashboard Grafana "scénario d'incident"
 
-- [ ] Un dashboard avec 2 panels minimum : courbe `sum(trivy_image_vulnerabilities{severity="Critical"})` (Prometheus) + panel logs Loki `{namespace="demo"}`, alignés sur la même plage de temps
+- [x] Un dashboard avec 2 panels minimum : courbe `sum(trivy_image_vulnerabilities{severity="Critical"})` (Prometheus) + panel logs Loki `{namespace="demo"}`, alignés sur la même plage de temps
 - [ ] Repérer visuellement le moment où la courbe chute après un merge — c'est le moment le plus fort de la démo
 
 **DoD :** capable de montrer en 30 secondes "voilà quand la faille est apparue, voilà les logs à ce moment, voilà quand c'est corrigé".
