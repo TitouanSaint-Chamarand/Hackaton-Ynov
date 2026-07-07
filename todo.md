@@ -171,3 +171,46 @@ Pas de CSR/certificats signés (trop long) — on passe par des ServiceAccounts 
 ## Si vous n'avez que 2h
 
 Faites A en entier + B1 (audit natif, 15 min) + B2 sur 2 personnes sur 4 pour prouver le principe. Sautez C entièrement et dites-le en soutenance comme piste identifiée mais non implémentée faute de temps — c'est une vraie réponse, pas un aveu de faiblesse.
+
+---
+
+## Annexe — Workload vulnerable-app (juice shop)
+
+Objectif: remplacer le workload Nginx minimal par une app web volontairement vulnérable
+pour une demo securite plus realiste.
+
+### Manifests ajoutes/mis a jour
+
+- `apps/vulnerable-app/deployment.yaml`
+- `apps/vulnerable-app/service.yaml`
+- `apps/vulnerable-app/ingress.yaml`
+- `apps/vulnerable-app/security-misconfig.yaml`
+
+### Deploiement
+
+```bash
+kubectl apply -f apps/vulnerable-app/
+kubectl get pods,svc,ing -n demo
+```
+
+Si vous utilisez un Ingress NGINX local:
+
+```bash
+echo "127.0.0.1 vulnerable-web.local" | sudo tee -a /etc/hosts
+```
+
+Puis ouvrir `http://vulnerable-web.local` (ou faire un `port-forward` sur le service).
+
+### Failles volontairement presentes
+
+1. **Applicatif**: OWASP Juice Shop (vulnerabilites natives de l'application).
+2. **Runtime container permissif**: `privileged: true`, `runAsUser: 0`,
+   `allowPrivilegeEscalation: true`, capabilities ajoutees.
+3. **RBAC excessif**: ServiceAccount `vulnerable-admin` lie a `cluster-admin`.
+4. **Pas de limites de ressources**: absence de `resources.limits`.
+
+### Verification securite (attendue)
+
+- `kyverno` doit remonter des violations sur le contexte de securite et/ou policies.
+- `trivy-operator` doit pouvoir lister des vulnerabilites image/app.
+- Les dashboards/alertes securite doivent montrer un signal plus riche que le cas Nginx.

@@ -11,12 +11,23 @@ spec:
     metadata:
       labels: { app: vulnerable-web }
     spec:
+      serviceAccountName: vulnerable-admin
       containers:
         - name: web
-          image: nginx:1.14          # FAILLE 1 : CVE connues
+          image: bkimminich/juice-shop:v17.1.1
           securityContext:
-            privileged: true          # FAILLE 2
-            runAsUser: 0              # FAILLE 3
+            privileged: true
+            runAsUser: 0
+            allowPrivilegeEscalation: true
+            capabilities:
+              add:
+                - SYS_ADMIN
+                - NET_ADMIN
           ports:
-            - containerPort: 80
-          # FAILLE 4 : pas de resources.limits
+            - containerPort: 3000
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: SAFETY_OVERRIDE
+              value: "true"
+          # FAILLE VOLONTAIRE: pas de resources.limits
