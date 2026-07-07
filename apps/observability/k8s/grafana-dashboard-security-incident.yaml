@@ -75,10 +75,7 @@ data:
         {
           "type": "stat",
           "title": "CVE actives (selon severite)",
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
+          "datasource": "Prometheus",
           "targets": [
             {
               "expr": "sum(trivy_image_vulnerabilities{severity=~\"$severity\"})",
@@ -95,10 +92,7 @@ data:
         {
           "type": "timeseries",
           "title": "Evolution CVE par severite",
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
+          "datasource": "Prometheus",
           "targets": [
             {
               "expr": "sum by (severity) (trivy_image_vulnerabilities)",
@@ -115,10 +109,7 @@ data:
         {
           "type": "timeseries",
           "title": "Redemarrages containers (${time_window})",
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
+          "datasource": "Prometheus",
           "targets": [
             {
               "expr": "sum(increase(kube_pod_container_status_restarts_total{namespace=~\"$namespace\"}[${time_window}]))",
@@ -135,10 +126,7 @@ data:
         {
           "type": "timeseries",
           "title": "CPU pods (${time_window})",
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
+          "datasource": "Prometheus",
           "targets": [
             {
               "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=~\"$namespace\", container!=\"\", image!=\"\"}[${time_window}]))",
@@ -155,10 +143,7 @@ data:
         {
           "type": "table",
           "title": "Changements recents (deployments)",
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
+          "datasource": "Prometheus",
           "targets": [
             {
               "expr": "topk(10, max by (namespace, deployment) (kube_deployment_created{namespace=~\"$namespace\"}))",
@@ -177,10 +162,7 @@ data:
         {
           "type": "timeseries",
           "title": "Kyverno - resultats de policies (${time_window})",
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
+          "datasource": "Prometheus",
           "targets": [
             {
               "expr": "sum(increase(kyverno_policy_results_total[${time_window}])) by (result)",
@@ -197,10 +179,7 @@ data:
         {
           "type": "stat",
           "title": "Falco - cibles scrapees UP",
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
+          "datasource": "Prometheus",
           "targets": [
             {
               "expr": "sum(up{namespace=\"falco\"})",
@@ -217,10 +196,7 @@ data:
         {
           "type": "logs",
           "title": "Logs correles",
-          "datasource": {
-            "type": "loki",
-            "uid": "loki"
-          },
+          "datasource": "Loki",
           "targets": [
             {
               "expr": "{namespace=~\"$namespace\", pod=~\"$service\"}",
