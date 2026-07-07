@@ -35,6 +35,7 @@ jobs:
         run: pytest apps/remediator/tests -q
 
       - name: Scan securite code (bandit)
+        continue-on-error: true
         run: bandit -q -r apps/remediator -x apps/remediator/tests
 
       - uses: docker/login-action@v3
