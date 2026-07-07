@@ -91,6 +91,7 @@ Pas de CSR/certificats signés (trop long) — on passe par des ServiceAccounts 
   kubectl create token user-<prenom> -n demo --duration=48h
   ```
   (construire un kubeconfig minimal avec ce token + l'URL du cluster + le CA déjà présent dans le kubeconfig admin)
+- [x] Ajouter un script repo pour automatiser cette génération : `scripts/team-access/generate-kubeconfigs.sh`
 - [ ] Chaque membre utilise désormais SON kubeconfig pour ses actions manuelles
 
 **DoD :** `kubectl get pods -n demo --as=system:serviceaccount:demo:user-<prenom>` reflète les droits attendus (pas plus).
@@ -129,6 +130,7 @@ Pas de CSR/certificats signés (trop long) — on passe par des ServiceAccounts 
   ```
 - [ ] Dans Grafana (déjà déployé), ajouter Loki comme datasource si pas auto-détecté
 - [ ] Vérifier : requête LogQL `{namespace="demo"}` dans Grafana Explore montre les logs de `vulnerable-web`
+- [x] Ajouter un script de vérification cluster A3/C1 : `scripts/security/verify-phase-a3-c1.sh`
 
 **DoD :** logs du conteneur `vulnerable-web` visibles dans Grafana, sur la même timeline que les métriques Prometheus.
 
