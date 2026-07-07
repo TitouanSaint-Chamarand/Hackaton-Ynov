@@ -1,332 +1,216 @@
-# TODO — Boucle d'audit et de remédiation GitOps assistée par IA
+# TODO — Ajustements retour coachs OVHcloud (jour 2)
 
-**Repo :** https://github.com/TitouanSaint-Chamarand/Hackaton-Ynov.git (branche `main`)
-**Contexte :** Hackathon Lille Ynov Campus × OVHcloud, 6-7 juillet 2026. Un seul développeur, assisté par Cursor.
+**Contexte :** ce fichier complète `TODO.md` (ne le remplace pas). Restitutions cet après-midi — priorités classées de la plus rentable à la plus sacrifiable. Si le temps manque, s'arrêter à la dernière tâche cochée et l'assumer en soutenance plutôt que de bâcler la suite.
 
----
-
-## Comment utiliser ce fichier
-
-Collez-le à la racine du repo (`TODO.md`), ouvrez-le dans Cursor, et demandez-lui d'exécuter les tâches dans l'ordre. Consignes pour l'agent :
-
-- Traiter les tâches **dans l'ordre des phases**. À l'intérieur d'une phase, les sous-tâches peuvent être parallélisées si elles sont indépendantes.
-- Chaque tâche a un **DoD (Definition of Done)** vérifiable par une commande. Ne pas passer à la suivante tant que le DoD n'est pas confirmé.
-- Cocher `[x]` et committer (message court, en anglais ou français, peu importe) après chaque tâche terminée. Push régulièrement.
-- Si une tâche est marquée **⚠️ INPUT REQUIS**, s'arrêter et demander la valeur à l'utilisateur plutôt que d'inventer une valeur plausible.
-- Ne jamais committer `kubeconfig.yaml`, `token.txt`, ou tout fichier `.env` contenant des secrets. Créer un `.gitignore` dès la Phase 1 qui les exclut.
-- Ne jamais automatiser le merge d'une Pull Request. C'est une action humaine, sans exception.
-- Le ServiceAccount du remédiateur ne doit avoir **aucun droit d'écriture sur le cluster** — lecture seule sur les CRD de rapports, écriture uniquement via l'API Git.
-- Après la Phase 2, plus aucune installation manuelle `helm install` en direct (sauf Argo CD lui-même) : tout nouveau composant passe par une Application Argo CD committée dans `infra/argocd-apps/`.
+**Repo :** https://github.com/TitouanSaint-Chamarand/Hackaton-Ynov.git
 
 ---
 
-## Variables d'environnement nécessaires
+## Consignes pour l'agent
 
-À collecter avant la Phase 8. Créer un fichier `.env.example` (sans valeurs réelles) et un `.env` local (gitignored, valeurs réelles) :
-
-| Variable | Description | Statut |
-|---|---|---|
-| `KUBECONFIG` | Chemin vers le kubeconfig du cluster (déjà fourni par l'utilisateur, hors repo) | ✅ disponible |
-| `GITHUB_TOKEN` | Fine-grained PAT GitHub, scope `Contents: Read/Write` + `Pull requests: Read/Write` sur ce repo | ⚠️ INPUT REQUIS — distinct du `token.txt` déjà fourni, qui est probablement une clé AI Endpoints et non un token GitHub |
-| `GITHUB_REPO` | `TitouanSaint-Chamarand/Hackaton-Ynov` | ✅ connu |
-| `OVH_AI_TOKEN` | Clé API OVHcloud AI Endpoints | ⚠️ à confirmer — vérifier si `token.txt` correspond bien à ceci |
-| `OVH_AI_BASE_URL` | URL de base du modèle choisi | ⚠️ INPUT REQUIS — dépend du modèle, à récupérer sur sa fiche dans le catalogue (`endpoints.ai.cloud.ovh.net`) |
-| `OVH_AI_MODEL` | Nom exact du modèle (ex. `Meta-Llama-3_3-70B-Instruct` ou `Qwen2.5-Coder-32B-Instruct`) | ⚠️ INPUT REQUIS |
+- Traiter les phases **dans l'ordre A → B → C**. Ne pas commencer C si A et B ne sont pas finis.
+- Pour tout ce qui touche aux clés Helm `values` (`resources.limits`, etc.), **vérifier d'abord avec `helm show values <repo> <chart> --version <version>`** avant d'écrire l'override — les noms de clés diffèrent d'un chart à l'autre, ne pas deviner.
+- Committer + push après chaque tâche, comme sur `TODO.md`.
 
 ---
 
-## Phase 1 — Bootstrap du repo
+## Phase A — Corrections coachs (⏱ 30-45 min)
 
-**Objectif :** structure de base en place et poussée sur `main`.
+### A1. Figer les versions des charts Helm
 
-- [x] Cloner `https://github.com/TitouanSaint-Chamarand/Hackaton-Ynov.git`
-- [x] Créer la structure :
+- [ ] Pour chaque Application déjà déployée (`trivy-operator`, `kyverno`, `kube-prometheus-stack`, `falco` si présent), récupérer la version actuellement synchronisée :
+  ```bash
+  kubectl get application <nom> -n argocd -o jsonpath='{.status.sync.revision}{"\n"}'
   ```
-  apps/
-    vulnerable-app/
-    remediator/
-  infra/
-    argocd-apps/
-  policies/
-  docs/
-  ```
-- [x] Créer `.gitignore` :
-  ```
-  kubeconfig.yaml
-  kubeconfig.yml
-  token.txt
-  .env
-  *.pem
-  ```
-- [x] Commit initial + push sur `main`
+- [x] Remplacer `targetRevision: "*"` par cette version exacte dans chaque `infra/argocd-apps/*.yaml`
 
-**DoD :** `git log` montre le commit, les dossiers existent sur GitHub.
+**DoD :** plus aucun `targetRevision: "*"` dans le repo.
+
+### A2. Limites CPU/RAM sur les vrais composants (pas le workload vulnérable)
+
+- [x] Pour chaque chart (`trivy-operator`, `kyverno`, `falco`, `kube-prometheus-stack`), lancer `helm show values <repo> <chart>` et repérer la clé `resources` correspondante
+- [x] Ajouter un bloc `resources.limits` raisonnable (ex. `cpu: 500m`, `memory: 512Mi` — ajuster selon la taille réelle du cluster) dans le `helm.values` de l'Application Argo CD concernée
+
+**DoD :** `kubectl get pods -n <namespace> -o jsonpath='{.items[*].spec.containers[*].resources}'` montre des limites non vides pour chaque composant d'infra (pas le workload vulnérable, qui doit rester sans limites — c'est une des 4 failles volontaires).
+
+### A3. Tags d'image toujours figés
+
+- [ ] Vérifier que `policies/disallow-latest-tag.yaml` (Kyverno) est bien déployé : `kubectl get clusterpolicy disallow-latest-tag`
+- [x] Relire le prompt système du remédiateur (`apps/remediator/remediator.py`) : confirmer qu'il impose explicitement un tag de version précis dans le YAML corrigé, jamais `:latest`
+
+**DoD :** `kubectl get policyreports -A` ne montre plus de violation `disallow-latest-tag` après le prochain correctif mergé.
 
 ---
 
-## Phase 2 — Argo CD (le seul install manuel du projet)
+## Phase B — Le différenciateur : traçabilité (⏱ 45 min-1h)
 
-**Objectif :** Argo CD tourne et surveille le repo. Jalon cible : aujourd'hui (lundi) midi.
+### B1. Activer l'audit natif OVHcloud (⏱ 15 min — très rentable, à ne pas sauter)
 
-- [x] `kubectl create namespace argocd`
-- [x] `kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argocd/stable/manifests/install.yaml`
-- [x] Attendre que tous les pods soient `Running` : `kubectl get pods -n argocd -w`
-- [x] Récupérer le mot de passe admin initial :
+- [ ] Ouvrir le Manager OVHcloud → votre cluster → onglet **Audit Logs** — c'est déjà natif, rien à installer
+- [ ] *(Optionnel si temps)* Abonner ce flux à Logs Data Platform pour la rétention/recherche :
   ```
-  kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
+  POST /cloud/project/{serviceName}/kube/{kubeId}/log/subscription
+  { "kind": "audit", "streamId": "<streamId de votre compte LDP>" }
   ```
-- [x] Créer `infra/argocd-apps/root-app.yaml` (app-of-apps racine) :
+- [ ] Préparer une capture d'écran de cet onglet pour la démo (filet de sécurité si la démo live a un souci)
+
+**DoD :** capable de montrer en direct un log d'action sur le cluster avec l'identité de l'utilisateur qui l'a faite.
+
+⚠️ Ces logs couvrent les actions sur l'API Kubernetes (qui a créé/modifié quoi), pas les logs applicatifs des containers — c'est le rôle de Loki (Phase C).
+
+### B2. Users Kubernetes personnalisés (un par membre de l'équipe)
+
+Pas de CSR/certificats signés (trop long) — on passe par des ServiceAccounts avec token.
+
+- [x] Créer 4 `ServiceAccount` (un par personne), namespace `demo` ou `default` selon vos besoins :
   ```yaml
-  apiVersion: argoproj.io/v1alpha1
-  kind: Application
+  apiVersion: v1
+  kind: ServiceAccount
   metadata:
-    name: root
-    namespace: argocd
-  spec:
-    project: default
-    source:
-      repoURL: https://github.com/TitouanSaint-Chamarand/Hackaton-Ynov.git
-      targetRevision: main
-      path: infra/argocd-apps
-    destination:
-      server: https://kubernetes.default.svc
-      namespace: argocd
-    syncPolicy:
-      automated: { prune: true, selfHeal: true }
-  ```
-- [x] `kubectl apply -f infra/argocd-apps/root-app.yaml` — **dernier `kubectl apply` manuel du projet, hors debug**
-- [x] Commit + push `infra/argocd-apps/root-app.yaml`
-
-**DoD :** `kubectl get applications -n argocd` liste `root` en `Synced`/`Healthy`.
-
----
-
-## Phase 3 — Workload volontairement vulnérable
-
-**Objectif :** une cible avec 4 familles de failles pour alimenter scanners + démo.
-
-- [x] Créer `apps/vulnerable-app/deployment.yaml` :
-  ```yaml
-  apiVersion: apps/v1
-  kind: Deployment
-  metadata:
-    name: vulnerable-web
+    name: user-<prenom>
     namespace: demo
-  spec:
-    replicas: 1
-    selector:
-      matchLabels: { app: vulnerable-web }
-    template:
-      metadata:
-        labels: { app: vulnerable-web }
-      spec:
-        containers:
-          - name: web
-            image: nginx:1.14          # FAILLE 1 : CVE connues
-            securityContext:
-              privileged: true          # FAILLE 2
-              runAsUser: 0              # FAILLE 3
-            ports:
-              - containerPort: 80
-            # FAILLE 4 : pas de resources.limits
   ```
-- [x] Créer `infra/argocd-apps/vulnerable-app.yaml` :
+- [x] Un `RoleBinding` par personne, adapté à son rôle réel (ex. lecture seule pour la partie IA, plus large pour Infra) :
   ```yaml
-  apiVersion: argoproj.io/v1alpha1
-  kind: Application
+  apiVersion: rbac.authorization.k8s.io/v1
+  kind: RoleBinding
   metadata:
-    name: vulnerable-app
-    namespace: argocd
-  spec:
-    project: default
-    source:
-      repoURL: https://github.com/TitouanSaint-Chamarand/Hackaton-Ynov.git
-      targetRevision: main
-      path: apps/vulnerable-app
-    destination:
-      server: https://kubernetes.default.svc
+    name: user-<prenom>-binding
+    namespace: demo
+  subjects:
+    - kind: ServiceAccount
+      name: user-<prenom>
       namespace: demo
-    syncPolicy:
-      automated: { prune: true, selfHeal: true }
-      syncOptions: [CreateNamespace=true]
+  roleRef:
+    kind: ClusterRole
+    name: edit          # ou "view" pour un accès lecture seule
+    apiGroup: rbac.authorization.k8s.io
   ```
-- [x] Commit + push
+- [ ] Générer un token + kubeconfig individuel :
+  ```bash
+  kubectl create token user-<prenom> -n demo --duration=48h
+  ```
+  (construire un kubeconfig minimal avec ce token + l'URL du cluster + le CA déjà présent dans le kubeconfig admin)
+- [ ] Chaque membre utilise désormais SON kubeconfig pour ses actions manuelles
 
-**DoD :** `kubectl get pods -n demo` montre `vulnerable-web` en `Running`. Garder ce commit identifiable — il servira à "rejouer" la faille en démo (`git revert` du futur correctif).
+**DoD :** `kubectl get pods -n demo --as=system:serviceaccount:demo:user-<prenom>` reflète les droits attendus (pas plus).
 
 ---
 
-## Phase 4 — Trivy-operator (détection de vulnérabilités)
+## Phase C — Observabilité avancée (⏱ 1h30-2h — sacrifier en premier si le temps manque)
 
-- [x] Créer `infra/argocd-apps/trivy-operator.yaml` :
+### C1. Loki (logs applicatifs)
+
+- [ ] Créer `infra/argocd-apps/loki.yaml` :
   ```yaml
   apiVersion: argoproj.io/v1alpha1
   kind: Application
   metadata:
-    name: trivy-operator
+    name: loki-stack
     namespace: argocd
   spec:
     project: default
     source:
-      repoURL: https://aquasecurity.github.io/helm-charts/
-      chart: trivy-operator
-      targetRevision: "*"
+      repoURL: https://grafana.github.io/helm-charts
+      chart: loki-stack
+      targetRevision: "<figer une version précise>"
       helm:
         values: |
-          trivy:
-            ignoreUnfixed: true
+          grafana:
+            enabled: false   # vous avez déjà Grafana via kube-prometheus-stack
+          promtail:
+            enabled: true
     destination:
       server: https://kubernetes.default.svc
-      namespace: trivy-system
+      namespace: logging
     syncPolicy:
       automated: { prune: true, selfHeal: true }
       syncOptions: [CreateNamespace=true]
   ```
-- [x] Commit + push
+- [ ] Dans Grafana (déjà déployé), ajouter Loki comme datasource si pas auto-détecté
+- [ ] Vérifier : requête LogQL `{namespace="demo"}` dans Grafana Explore montre les logs de `vulnerable-web`
 
-**DoD :** après quelques minutes, `kubectl get vulnerabilityreports -A` montre un rapport pour `vulnerable-web` avec des CVE `CRITICAL`/`HIGH`.
+**DoD :** logs du conteneur `vulnerable-web` visibles dans Grafana, sur la même timeline que les métriques Prometheus.
 
----
+### C2. Alertmanager — alerte sur CVE critique
 
-## Phase 5 — Kyverno (policy-as-code)
-
-**Note :** garder `validationFailureAction: Audit` — jamais `Enforce`, sinon Kyverno bloquerait votre propre workload vulnérable et il n'y aurait plus rien à démontrer.
-
-- [x] Créer `infra/argocd-apps/kyverno.yaml` :
+- [ ] Créer une `PrometheusRule` (Alertmanager est déjà bundlé dans `kube-prometheus-stack`, rien à réinstaller) :
   ```yaml
-  apiVersion: argoproj.io/v1alpha1
-  kind: Application
+  apiVersion: monitoring.coreos.com/v1
+  kind: PrometheusRule
   metadata:
-    name: kyverno
-    namespace: argocd
+    name: cve-critical-alert
+    namespace: monitoring
+    labels:
+      release: kube-prometheus-stack
   spec:
-    project: default
-    source:
-      repoURL: https://kyverno.github.io/kyverno/
-      chart: kyverno
-      targetRevision: "*"
-    destination:
-      server: https://kubernetes.default.svc
-      namespace: kyverno
-    syncPolicy:
-      automated: { prune: true, selfHeal: true }
-      syncOptions: [CreateNamespace=true, ServerSideApply=true]
+    groups:
+      - name: security
+        rules:
+          - alert: CriticalCVEDetected
+            expr: sum(trivy_image_vulnerabilities{severity="Critical"}) > 0
+            for: 5m
+            labels:
+              severity: critical
+            annotations:
+              summary: "Au moins une CVE critique détectée dans le cluster"
   ```
-- [x] Créer `policies/disallow-privileged.yaml`, `policies/require-limits.yaml`, `policies/disallow-latest-tag.yaml` (3 ClusterPolicy en mode `Audit`, cf. bibliothèque officielle : https://kyverno.io/policies/)
-- [x] Créer `infra/argocd-apps/policies.yaml` pointant sur le dossier `policies/` (même modèle que `vulnerable-app.yaml`)
-- [x] Commit + push
+- [ ] Commit dans `infra/argocd-apps/` (ou via une Application dédiée pointant sur ce fichier)
 
-**DoD :** `kubectl get policyreports -n demo` montre des violations `fail` pour `vulnerable-web`.
+**DoD :** l'alerte apparaît dans l'UI Alertmanager (`kubectl port-forward svc/kube-prometheus-stack-alertmanager -n monitoring 9093:9093`) quand une CVE critique est présente.
 
----
+### C3. Dashboard Grafana "scénario d'incident"
 
-## Phase 6 — Prometheus (observabilité)
+- [ ] Un dashboard avec 2 panels minimum : courbe `sum(trivy_image_vulnerabilities{severity="Critical"})` (Prometheus) + panel logs Loki `{namespace="demo"}`, alignés sur la même plage de temps
+- [ ] Repérer visuellement le moment où la courbe chute après un merge — c'est le moment le plus fort de la démo
 
-- [x] Créer `infra/argocd-apps/prometheus.yaml` (chart `kube-prometheus-stack`, repo `https://prometheus-community.github.io/helm-charts`, namespace `monitoring`, `ServerSideApply=true`)
-- [x] Commit + push
-
-**DoD :** `kubectl port-forward svc/kube-prometheus-stack-grafana -n monitoring 3000:80` puis Grafana accessible.
+**DoD :** capable de montrer en 30 secondes "voilà quand la faille est apparue, voilà les logs à ce moment, voilà quand c'est corrigé".
 
 ---
 
-## Phase 7 — Falco (détection runtime)
+## Si vous n'avez que 2h
 
-**Priorité basse** : le brief le liste comme obligatoire, mais en solo, ne pas bloquer la Phase 9 pour ça. À faire si Phases 1-6 sont bouclées avec de l'avance.
-
-- [x] Créer `infra/argocd-apps/falco.yaml` (chart `falco`, repo `https://falcosecurity.github.io/charts`, `driver.kind: modern_ebpf`, `falcosidekick.enabled: true`)
-- [x] Commit + push
-
-**DoD :** `kubectl exec -it deploy/vulnerable-web -n demo -- sh -c "cat /etc/shadow"` déclenche une alerte visible dans `kubectl logs -n falco -l app.kubernetes.io/name=falco`.
+Faites A en entier + B1 (audit natif, 15 min) + B2 sur 2 personnes sur 4 pour prouver le principe. Sautez C entièrement et dites-le en soutenance comme piste identifiée mais non implémentée faute de temps — c'est une vraie réponse, pas un aveu de faiblesse.
 
 ---
 
-## Phase 8 — AI Endpoints : premier appel isolé
+## Annexe — Workload vulnerable-app (juice shop)
 
-⚠️ **INPUT REQUIS** : `OVH_AI_TOKEN` valide (le `token.txt` actuel renvoie 403). URL/modèle configurés dans `.env.example`.
+Objectif: remplacer le workload Nginx minimal par une app web volontairement vulnérable
+pour une demo securite plus realiste.
 
-- [ ] Test curl :
-  ```bash
-  curl -s "$OVH_AI_BASE_URL/chat/completions" \
-    -H "Authorization: Bearer $OVH_AI_TOKEN" \
-    -H "Content-Type: application/json" \
-    -d '{"model":"'"$OVH_AI_MODEL"'","messages":[{"role":"user","content":"ça marche ?"}]}'
-  ```
-- [x] Test Python équivalent avec le client `openai` (`base_url` + `api_key` pointant vers AI Endpoints) — script `apps/remediator/test_ai.py` (en attente token valide)
+### Manifests ajoutes/mis a jour
 
-**DoD :** réponse JSON contenant `choices[0].message.content`.
+- `apps/vulnerable-app/deployment.yaml`
+- `apps/vulnerable-app/service.yaml`
+- `apps/vulnerable-app/ingress.yaml`
+- `apps/vulnerable-app/security-misconfig.yaml`
 
----
+### Deploiement
 
-## Phase 9 — Le remédiateur (`apps/remediator/remediator.py`)
+```bash
+kubectl apply -f apps/vulnerable-app/
+kubectl get pods,svc,ing -n demo
+```
 
-**C'est le vrai livrable applicatif.** Contrat attendu — pas de code fourni ici, à écrire :
+Si vous utilisez un Ingress NGINX local:
 
-| Fonction | Entrée | Sortie |
-|---|---|---|
-| `get_vulnerability_reports(namespace)` | nom de namespace | liste des `VulnerabilityReport` (group `aquasecurity.github.io`, version `v1alpha1`, plural `vulnerabilityreports`) |
-| `summarize_report(report)` | un rapport | résumé texte compact (CVE triées par sévérité, avec `fixedVersion`) pour le prompt |
-| `get_manifest_from_github(repo, path)` | chemin du manifeste | contenu YAML actuel + sha (pour le commit) |
-| `ask_ai_for_fix(summary, manifest)` | résumé + manifeste | `(explication, yaml_corrigé)` — forcer un format de sortie strict côté prompt système |
-| `validate_yaml(yaml_corrigé)` | YAML proposé | bool — dry-run (`kubectl apply --dry-run=server` ou `yaml.safe_load`) avant toute création de PR |
-| `open_pull_request(...)` | branche + patch + explication | URL de la PR créée |
+```bash
+echo "127.0.0.1 vulnerable-web.local" | sudo tee -a /etc/hosts
+```
 
-**Garde-fous obligatoires (à implémenter, pas optionnels) :**
-- [x] Validation dry-run du YAML avant d'ouvrir la PR
-- [x] Vérifier qu'une PR `fix/ai-remediation-<id>` n'est pas déjà ouverte avant d'en créer une
-- [x] Titre de la PR = identifiant CVE, description = explication de l'IA
-- [x] `requirements.txt` : `openai`, `kubernetes`, `PyGithub`, `pyyaml`
+Puis ouvrir `http://vulnerable-web.local` (ou faire un `port-forward` sur le service).
 
-**DoD :** exécuter le script ouvre une vraie PR — ⚠️ nécessite `GITHUB_TOKEN` + `OVH_AI_TOKEN` valides.
+### Failles volontairement presentes
 
----
+1. **Applicatif**: OWASP Juice Shop (vulnerabilites natives de l'application).
+2. **Runtime container permissif**: `privileged: true`, `runAsUser: 0`,
+   `allowPrivilegeEscalation: true`, capabilities ajoutees.
+3. **RBAC excessif**: ServiceAccount `vulnerable-admin` lie a `cluster-admin`.
+4. **Pas de limites de ressources**: absence de `resources.limits`.
 
-## Phase 10 — Fermer la boucle
+### Verification securite (attendue)
 
-- [ ] Relire la PR (revue humaine)
-- [ ] Merger **manuellement** (jamais automatisé)
-- [ ] Vérifier resync Argo CD (`kubectl get pods -n demo` → nouveau pod)
-- [ ] Relancer/attendre un scan Trivy et vérifier que le `VulnerabilityReport` critique a disparu
-
-**DoD :** boucle complète prouvée de bout en bout sur au moins une vulnérabilité.
-
----
-
-## Phase 11 — RBAC + packaging CronJob (bonus)
-
-- [x] `ServiceAccount` + `ClusterRole` (lecture seule sur `vulnerabilityreports`) + `ClusterRoleBinding`
-- [x] `Dockerfile` pour `apps/remediator/`
-- [x] `infra/argocd-apps/remediator.yaml` (CronJob packagé, déployé lui aussi via Argo CD, schedule `*/10 * * * *`)
-- [x] Adapter le script pour `config.load_incluster_config()` au lieu du kubeconfig local
-
-**DoD :** `kubectl auth can-i create deployments --as=system:serviceaccount:<ns>:<sa>` répond `no`. Une exécution manuelle du CronJob réussit.
-
----
-
-## Phase 12 — Vérification sécurité (ne pas sauter)
-
-- [x] RBAC du remédiateur confirmé lecture seule (manifeste `apps/remediator/k8s/rbac.yaml`)
-- [x] Aucune étape n'automatise le merge
-- [x] Aucun secret commité (vérifier l'historique git aussi, pas juste l'état actuel)
-
----
-
-## Phase 13 — Documentation
-
-- [x] `apps/remediator/README.md` (comment lancer, variables d'env nécessaires)
-- [x] `docs/architecture.md` — rapport 1-2 pages : schéma, rôle de chaque brique, choix (Trivy vs Kubescape, script vs opérateur), limites
-- [x] `docs/cncf-table.md` — tableau statuts CNCF des composants réellement utilisés
-
----
-
-## Aide-mémoire liens
-
-| Sujet | Lien |
-|---|---|
-| Argo CD | https://argo-cd.readthedocs.io |
-| Trivy-operator | https://github.com/aquasecurity/trivy-operator |
-| Kyverno policies | https://kyverno.io/policies/ |
-| Falco | https://falco.org/docs/ |
-| kube-prometheus-stack | https://github.com/prometheus-community/helm-charts |
-| AI Endpoints | https://endpoints.ai.cloud.ovh.net |
-| PyGithub | https://pygithub.readthedocs.io/en/stable/ |
-| GitHub REST — Create a PR | https://docs.github.com/en/rest/pulls/pulls?apiVersion=2022-11-28#create-a-pull-request |
+- `kyverno` doit remonter des violations sur le contexte de securite et/ou policies.
+- `trivy-operator` doit pouvoir lister des vulnerabilites image/app.
+- Les dashboards/alertes securite doivent montrer un signal plus riche que le cas Nginx.

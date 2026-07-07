@@ -234,6 +234,52 @@ Attendu : `no`.
 
 ---
 
+## 10. Phase B — Traçabilité
+
+### B1. Audit Logs OVHcloud (manuel)
+
+1. Ouvrir OVHcloud Manager
+2. Aller sur le projet Public Cloud puis le cluster Kubernetes
+3. Ouvrir l'onglet `Audit Logs`
+4. Verifier qu'un evenement recent apparait avec l'identite de l'utilisateur
+5. Prendre une capture d'ecran pour la soutenance
+
+Optionnel: abonner ce flux a Logs Data Platform selon votre configuration OVH.
+
+### B2. Comptes Kubernetes par membre
+
+Le repo contient maintenant une app Argo CD dediee:
+
+- `infra/argocd-apps/team-access.yaml`
+- `apps/team-access/k8s/rbac-users.yaml`
+
+Deploiement et verification:
+
+```bash
+kubectl get application team-access -n argocd
+kubectl get sa -n demo | rg '^user-'
+kubectl get rolebindings -n demo | rg 'user-.*-binding'
+```
+
+Generation d'un kubeconfig individuel (token 48h par defaut):
+
+```bash
+chmod +x apps/team-access/generate-sa-kubeconfig.sh
+./apps/team-access/generate-sa-kubeconfig.sh user-dev1 demo 48h
+KUBECONFIG=./user-dev1-demo-kubeconfig.yaml kubectl get pods -n demo
+```
+
+Controle des droits (exemple):
+
+```bash
+kubectl auth can-i get pods --as=system:serviceaccount:demo:user-dev3 -n demo
+kubectl auth can-i create deployments --as=system:serviceaccount:demo:user-dev3 -n demo
+```
+
+Attendu: un profil en `view` peut lire mais pas creer de deployments.
+
+---
+
 ## Fichiers sensibles (ne jamais committer)
 
 ```
