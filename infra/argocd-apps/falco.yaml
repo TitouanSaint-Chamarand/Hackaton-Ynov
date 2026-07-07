@@ -13,10 +13,18 @@ spec:
       values: |
         driver:
           kind: modern_ebpf
+        falco:
+          webserver:
+            enabled: true
+          metrics:
+            enabled: true
         resources:
           limits:
             cpu: 500m
             memory: 512Mi
+        serviceMonitor:
+          create: true
+          interval: 30s
         falcosidekick:
           enabled: true
   destination:

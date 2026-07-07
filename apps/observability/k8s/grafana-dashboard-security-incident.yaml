@@ -24,46 +24,228 @@ data:
           "pluginName": "Loki"
         }
       ],
-      "title": "Scenario incident securite",
+      "title": "Astreinte - Incident securite",
       "uid": "security-incident-demo",
       "schemaVersion": 39,
-      "version": 1,
+      "version": 3,
       "timezone": "browser",
       "time": {
         "from": "now-6h",
         "to": "now"
       },
+      "templating": {
+        "list": [
+          {
+            "name": "namespace",
+            "type": "query",
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            },
+            "query": "label_values(kube_pod_info, namespace)",
+            "refresh": 1,
+            "includeAll": true,
+            "allValue": ".+",
+            "multi": false,
+            "current": {
+              "selected": true,
+              "text": "All",
+              "value": "$__all"
+            }
+          },
+          {
+            "name": "service",
+            "type": "query",
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            },
+            "query": "label_values(kube_pod_info{namespace=~\"$namespace\"}, pod)",
+            "refresh": 1,
+            "includeAll": true,
+            "allValue": ".+",
+            "multi": false,
+            "current": {
+              "selected": true,
+              "text": "All",
+              "value": "$__all"
+            }
+          },
+          {
+            "name": "severity",
+            "type": "custom",
+            "query": "Critical,High,Medium,Low",
+            "current": {
+              "selected": true,
+              "text": "Critical",
+              "value": "Critical"
+            }
+          },
+          {
+            "name": "time_window",
+            "type": "custom",
+            "query": "5m,15m,30m,1h",
+            "current": {
+              "selected": true,
+              "text": "15m",
+              "value": "15m"
+            }
+          }
+        ]
+      },
       "panels": [
         {
-          "type": "timeseries",
-          "title": "CVE critiques detectees",
+          "type": "stat",
+          "title": "CVE actives (selon severite)",
           "datasource": {
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
           "targets": [
             {
-              "expr": "sum(trivy_image_vulnerabilities{severity=\"Critical\"})",
+              "expr": "sum(trivy_image_vulnerabilities{severity=~\"$severity\"})",
               "refId": "A"
             }
           ],
           "gridPos": {
-            "h": 10,
-            "w": 24,
+            "h": 6,
+            "w": 8,
             "x": 0,
             "y": 0
           }
         },
         {
+          "type": "timeseries",
+          "title": "Evolution CVE par severite",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "targets": [
+            {
+              "expr": "sum by (severity) (trivy_image_vulnerabilities)",
+              "refId": "A"
+            }
+          ],
+          "gridPos": {
+            "h": 10,
+            "w": 16,
+            "x": 8,
+            "y": 0
+          }
+        },
+        {
+          "type": "timeseries",
+          "title": "Redemarrages containers (${time_window})",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "targets": [
+            {
+              "expr": "sum(increase(kube_pod_container_status_restarts_total{namespace=~\"$namespace\"}[${time_window}]))",
+              "refId": "A"
+            }
+          ],
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 6
+          }
+        },
+        {
+          "type": "timeseries",
+          "title": "CPU pods (${time_window})",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "targets": [
+            {
+              "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=~\"$namespace\", container!=\"\", image!=\"\"}[${time_window}]))",
+              "refId": "A"
+            }
+          ],
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 6
+          }
+        },
+        {
+          "type": "table",
+          "title": "Changements recents (deployments)",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "targets": [
+            {
+              "expr": "topk(10, max by (namespace, deployment) (kube_deployment_created{namespace=~\"$namespace\"}))",
+              "format": "table",
+              "instant": true,
+              "refId": "A"
+            }
+          ],
+          "gridPos": {
+            "h": 8,
+            "w": 24,
+            "x": 0,
+            "y": 14
+          }
+        },
+        {
+          "type": "timeseries",
+          "title": "Kyverno - resultats de policies (${time_window})",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "targets": [
+            {
+              "expr": "sum(increase(kyverno_policy_results_total[${time_window}])) by (result)",
+              "refId": "A"
+            }
+          ],
+          "gridPos": {
+            "h": 7,
+            "w": 12,
+            "x": 0,
+            "y": 22
+          }
+        },
+        {
+          "type": "stat",
+          "title": "Falco - cibles scrapees UP",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "targets": [
+            {
+              "expr": "sum(up{namespace=\"falco\"})",
+              "refId": "A"
+            }
+          ],
+          "gridPos": {
+            "h": 7,
+            "w": 12,
+            "x": 12,
+            "y": 22
+          }
+        },
+        {
           "type": "logs",
-          "title": "Logs namespace demo",
+          "title": "Logs correles",
           "datasource": {
             "type": "loki",
             "uid": "${DS_LOKI}"
           },
           "targets": [
             {
-              "expr": "{namespace=\"demo\"}",
+              "expr": "{namespace=~\"$namespace\", pod=~\"$service\"}",
               "refId": "A"
             }
           ],
@@ -71,7 +253,21 @@ data:
             "h": 14,
             "w": 24,
             "x": 0,
-            "y": 10
+            "y": 29
+          }
+        },
+        {
+          "type": "text",
+          "title": "Contexte astreinte",
+          "gridPos": {
+            "h": 8,
+            "w": 24,
+            "x": 0,
+            "y": 43
+          },
+          "options": {
+            "mode": "markdown",
+            "content": "### Contexte incident\\n- Service: `$service`\\n- Namespace: `$namespace`\\n- Severite suivie: `$severity`\\n- Equipe proprietaire: `security`\\n- Criticite: `high`\\n- Runbook: [Investigation CVE critique](https://runbooks.example.internal/security/cve-critical)\\n- Dashboard UID: `security-incident-demo`\\n- Query logs recommandee: `{namespace=\\\"$namespace\\\"} |= \\\"error\\\"`\\n\\n**Checklist rapide**\\n1. Verifier l'evolution CVE\\n2. Croiser avec redemarrages/CPU\\n3. Ouvrir les logs correles\\n4. Escalader si impact client confirme"
           }
         }
       ]
