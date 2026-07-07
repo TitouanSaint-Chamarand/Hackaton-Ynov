@@ -5,8 +5,7 @@ from __future__ import annotations
 
 import os
 import re
-# nosec B404
-import subprocess
+import subprocess  # nosec B404
 import sys
 import tempfile
 from typing import Any
@@ -153,8 +152,7 @@ def validate_yaml(yaml_content: str) -> bool:
 
     try:
         cmd = ["kubectl", "apply", "--dry-run=server", "-f", path]
-        # nosec B603
-        result = subprocess.run(
+        result = subprocess.run(  # nosec B603
             cmd,
             capture_output=True,
             text=True,
